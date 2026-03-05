@@ -1,51 +1,111 @@
 import os
 from collections import Counter
 
-raw_ciphertext = """=J3-dJxMLJtGIQ
-dMRGJ!Mt3IBP-MItGP$Pd3ndP-GtFMQ-=-B-$KM=PC=->-$$USML-xtGdnxMtMJQ=-L-3-$$U!nMn$YJ=!PVnJ$$U!nM=-tI=tP!nMAMAJGJ=U!MQJ3IBP-GMLJtGIQMQJ3KCJdPG-3KMn3nMO=IQQPMQJ3KCJdPG-3-x
-Q=nMGPAJ!MQJLSJL-MCPMJt$JdIM9-=-GtFMLJ3h$JtGKMQJ3KCJdPG-3FMn3nM-OJMQ=n$PL3-h$JtGKMAMJQ=-L-3-$$J!IMQJL=PCL-3-$n8
-$PQ=n!-=M9ISOP3G-=M9IL-GMn!-GKMLJtGIQMAMYn$P$tJdJxMnMAPL=JdJxMn$YJ=!PVnnMt!Jh-GMt!JG=-GKMnMnC!-$FGKM-E
-=P9JG$nAMQ=JnCdJLtGd-$$JOJMJGL-3PM9IL-GMn!-GKMLJtGIQMAMG-S$nB-tAJxMnMn$h-$-=$JxMn$YJ=!PVnnMQ=JdJLnGKMJQ=-L-3-$$U-ML-xtGdnFMtM$n!n
-!P$LPG$UxMLJtGIQ
-dMRGJ!Mt3IBP-MItGP$Pd3ndP-GtFMO=PLPVnFMn$YJ=!PVnnM$PMI=Jd$nMtJO3Pt$JMAJ$YnL-$VnP3K$JtGnMV-$$JtGnMLP$$US
-tJJGd-GtGd-$$JMBGJ9UMQJ3IBnGKMLJtGIQMAMGJ!IMn3nMn$J!IMI=Jd$8MLJtGIQPM$Ih$JMJ93PLPGKMQJLSJLFZn!ML3FMRGJOJMtGPGItJ!MAJGJ=UxMItGP$Pd3ndP-GtFMdMtntG-!-
-GPAPFM!JL-3KMPdGJ=nCPVnnM$Pn9J3--MSP=PAG-=$PML3FMOJtIB=-hL-$nxM=P9JGP8ZnSMtMOJtILP=tGd-$$JxMGPx$JxMnML=IOn!nMdnLP!nMAJ$YnL-$VnP3K$JxMn$YJ=!PVnn
---MQ=n$VnQnP3K$U!MJG3nBn-!MJGML=IOnSM!JL-3-xMFd3F-GtFMGJGMYPAGMBGJMQJ3KCJdPG-3KM$-M!Jh-GM$nAPAMnC!-$nGKMCPLP$$UxMI=Jd-$KMLJtGIQ$JtGnMn$YJ=!PVnn"""
+INPUT_CIPHER_FILE = "cod16.txt"
+OUTPUT_DECODED = "decoded.txt"
+OUTPUT_KEY = "key.txt"
+OUTPUT_FREQ = "frequency.txt"
 
-ciphertext = raw_ciphertext.upper()
-clean = ciphertext.replace('\n', '')
-freq = Counter(clean)
-most_common_char = freq.most_common(1)[0][0]
-mapping = {most_common_char: ' '}
 
-def clear_screen():
+def read_ciphertext(file_path: str) -> str:
+    """
+    Читает шифротекст из указанного файла.
+    
+    Args:
+        file_path: путь к файлу с зашифрованным текстом
+        
+    Returns:
+        строка с содержимым файла
+        
+    Raises:
+        FileNotFoundError, если файл не найден
+    """
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"Файл шифротекста не найден: {file_path}")
+    
+    with open(file_path, encoding="utf-8") as f:
+        return f.read()
+
+
+def prepare_ciphertext(raw_text: str) -> str:
+    """
+    Подготавливает шифротекст: приводит к верхнему регистру и убирает переносы строк.
+    """
+    return raw_text.upper().replace('\n', ' ')
+
+
+def count_symbol_frequencies(text: str) -> Counter:
+    """
+    Подсчитывает частоту появления каждого символа в тексте.
+    """
+    return Counter(text)
+
+
+def create_initial_mapping(freq_counter: Counter) -> dict:
+    """
+    Создаёт начальное отображение, предполагая, что самый частый символ — это пробел.
+    """
+    if not freq_counter:
+        return {}
+    most_common = freq_counter.most_common(1)[0][0]
+    return {most_common: ' '}
+
+
+def apply_mapping(cipher_text: str, mapping: dict) -> str:
+    """
+    Применяет текущую таблицу замен к шифротексту.
+    """
+    return ''.join(mapping.get(c, c) for c in cipher_text)
+
+
+def clear_screen() -> None:
+    """Очищает консоль """
     os.system('cls' if os.name == 'nt' else 'clear')
 
-def show_decoded_and_freq():
-    decoded = ''.join(mapping.get(c, c) for c in ciphertext)
-    
+
+def display_progress(cipher_text: str, mapping: dict, freq: Counter) -> None:
+    """
+    Выводит текущий расшифрованный текст и статистику частот с заменами.
+    """
     clear_screen()
+    decoded = apply_mapping(cipher_text, mapping)
+    
     print("Текущий расшифрованный текст:\n")
     print("-" * 100)
     print(decoded)
     print("-" * 100)
     print("\nЧастота символов и текущие замены:\n")
     
-    total = len(clean)
-    for char, count in freq.most_common():
+    total = len(cipher_text)
+    for char, count in freq.most_common(33):
         percent = count / total * 100
-        repl = mapping.get(char, '?')
-        print(f" {char:3} {count:4} {percent:5.1f}% → {repl}")
+        replacement = mapping.get(char, '?')
+        print(f" {char:3} {count:5} {percent:5.1f}% → {replacement}")
     
-    print(f"\nВсего символов: {total}\n")
+    print(f"\nВсего символов: {total}\n |  Известно замен: {len(mapping)}")
 
-def save_results():
-    decoded = ''.join(mapping.get(c, c) for c in ciphertext)
 
-    with open("decoded.txt", "w", encoding="utf-8") as f:
+def print_help() -> None:
+    """Выводит справку по доступным командам."""
+    print("\nКоманды:")
+    print("  J о       — заменить J → о")
+    print("  3 .       — убрать замену (оставить символ как есть)")
+    print("  clear     — обновить экран")
+    print("  help      — показать эту справку")
+    print("  q         — выход + сохранение всех файлов")
+    print()
+
+
+def save_results(cipher_text: str, mapping: dict, freq: Counter) -> None:
+    """
+    Сохраняет результаты расшифровки в три файла.
+    """
+    decoded = apply_mapping(cipher_text, mapping)
+
+    with open(OUTPUT_DECODED, "w", encoding="utf-8") as f:
         f.write(decoded)
 
-    with open("key.txt", "w", encoding="utf-8") as f:
+    with open(OUTPUT_KEY, "w", encoding="utf-8") as f:
         f.write("Таблица замен (шифр → открытый текст):\n")
         f.write("-" * 40 + "\n")
         for cipher_char in sorted(mapping):
@@ -53,72 +113,77 @@ def save_results():
             f.write(f"{cipher_char:3} → {plain}\n")
         f.write("\n")
 
-    with open("frequency.txt", "w", encoding="utf-8") as f:
+    with open(OUTPUT_FREQ, "w", encoding="utf-8") as f:
         f.write("Символ | Кол-во | Процент\n")
         f.write("-" * 35 + "\n")
-        total = len(clean)
+        total = len(cipher_text)
         for char, count in freq.most_common():
             percent = count / total * 100
             f.write(f"{char:6} | {count:6} | {percent:6.2f}%\n")
         f.write(f"\nВсего символов: {total}\n")
-    
+
     print("\nСохранено в файлы:")
-    print("  decoded.txt     — расшифрованный текст")
-    print("  key.txt         — ключ")
-    print("  frequency.txt   — частоты символов шифрованного текста\n")
+    print(f"  {OUTPUT_DECODED:<15} — расшифрованный текст")
+    print(f"  {OUTPUT_KEY:<15} — таблица замен")
+    print(f"  {OUTPUT_FREQ:<15} — частотный анализ\n")
 
-def show_help():
-    print("\nКоманды:")
-    print("  J о       — заменить J → о")
-    print("  3 .       — убрать замену (показывать символ как есть)")
-    print("  clear     — обновить экран")
-    print("  exit / q  — выход + сохранение всех файлов")
-    print()
 
-def main():
-    show_decoded_and_freq()
-    show_help()
+def main() -> None:
+    """Основная функция — интерактивная расшифровка методом подстановки."""
+    print("Интерактивная расшифровка текста (частотный анализ + ручные замены)\n")
+    print(f"Читаем шифротекст из файла: {INPUT_CIPHER_FILE}\n")
 
-    while True:
-        try:
-            cmd = input("→ ").strip()
+    try:
+        raw_cipher = read_ciphertext(INPUT_CIPHER_FILE)
+        clean_cipher = prepare_ciphertext(raw_cipher)
+        frequencies = count_symbol_frequencies(clean_cipher)
+        current_mapping = create_initial_mapping(frequencies)
 
-            if cmd.lower() in ('q'):
-                save_results()
+        display_progress(clean_cipher, current_mapping, frequencies)
+        print_help()
+
+        while True:
+            command = input(" ").strip()
+
+            if command.lower() in ('q'):
+                save_results(clean_cipher, current_mapping, frequencies)
                 clear_screen()
-                print("Результаты сохранены в decoded.txt, key.txt и frequency.txt")
+                print("Результаты сохранены. До свидания.")
                 break
 
-            if cmd.lower() == 'clear':
-                show_decoded_and_freq()
+            if command.lower() == 'clear':
+                display_progress(clean_cipher, current_mapping, frequencies)
                 continue
 
-            parts = cmd.split(maxsplit=1)
+            if command.lower() in ('help'):
+                print_help()
+                continue
+
+            parts = command.split(maxsplit=1)
             if len(parts) != 2:
-                print("символ → замена ")
-
-                show_decoded_and_freq()
+                print("Формат: <символ> <замена>    пример:  J о")
                 continue
 
-            sym, repl = parts
-            if len(sym) != 1:
-                print("Символ должен быть один")
-                show_decoded_and_freq()
+            cipher_sym, replacement = parts
+            if len(cipher_sym) != 1:
+                print("Левый аргумент должен быть одним символом")
                 continue
 
-            if repl in ('.', 'как есть', 'оригинал', 'удалить', '-'):
-                mapping.pop(sym, None)
+            if replacement in ('.', 'как есть', 'оригинал', '-', 'удалить', 'убрать'):
+                current_mapping.pop(cipher_sym, None)
             else:
-                mapping[sym] = repl
+                current_mapping[cipher_sym] = replacement
 
-            show_decoded_and_freq()
+            display_progress(clean_cipher, current_mapping, frequencies)
 
-        except KeyboardInterrupt:
-            print("\nCtrl+C → сохранение и выход")
-            save_results()
-            clear_screen()
-            print("Результаты сохранены.")
-            break
+    except FileNotFoundError as e:
+        print(e)
+    except KeyboardInterrupt:
+        print("\nCtrl+C → сохранение и выход")
+        save_results(clean_cipher, current_mapping, frequencies)
+    except Exception as e:
+        print(f"Произошла ошибка: {e}")
+
 
 if __name__ == '__main__':
     main()
