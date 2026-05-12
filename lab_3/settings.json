@@ -1,0 +1,8 @@
+{
+  "initial_file": "C:/path/to/document.txt",
+  "encrypted_file": "C:/path/to/document.enc",
+  "decrypted_file": "C:/path/to/decrypted_document.txt",
+  "symmetric_key": "keys/enc_sym.key",
+  "public_key": "keys/public.pem",
+  "secret_key": "keys/private.pem"
+}
