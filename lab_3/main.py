@@ -1,8 +1,10 @@
 import argparse
 import sys
-import json
-import script
+import file_io
 import utils
+import key_generate
+import data_encryption
+import data_decryption
 
 DEFAULT_CONFIG_PATH = "settings.json"
 
@@ -23,16 +25,9 @@ def main() -> None:
     print(f"[INFO] Loading configuration from {args.config}...")
     
     try:
-        config_data = utils.read_file(args.config).decode('utf-8')
-        config = json.loads(config_data)
+        config = file_io.load_json_config(args.config)
     except utils.CryptoAppError as e:
         print(f"[ERROR] {e}")
-        sys.exit(1)
-    except json.JSONDecodeError as e:
-        print(f"[ERROR] Invalid JSON format in {args.config}: {e}")
-        sys.exit(1)
-    except Exception as e:
-        print(f"[CRITICAL] Unexpected error loading config: {e}")
         sys.exit(1)
 
     command = "gen" if args.generation else "enc" if args.encryption else "dec" if args.decryption else "none"
@@ -40,11 +35,11 @@ def main() -> None:
     try:
         match command:
             case "gen":
-                script.run_generation(config)
+                key_generate.run_generation(config)
             case "enc":
-                script.run_encryption(config)
+                data_encryption.run_encryption(config)
             case "dec":
-                script.run_decryption(config)
+                data_decryption.run_decryption(config)
             case _:
                 print("[ERROR] No valid command specified.")
                 sys.exit(1)

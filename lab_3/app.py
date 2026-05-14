@@ -1,5 +1,4 @@
 import sys
-import json
 import os
 import html
 from typing import Callable, Dict
@@ -7,11 +6,14 @@ from typing import Callable, Dict
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                              QHBoxLayout, QFormLayout, QLineEdit, QPushButton, 
                              QPlainTextEdit, QFileDialog, QMessageBox, QGroupBox)
-from PyQt5.QtCore import QThread, pyqtSignal, Qt
+from PyQt5.QtCore import QThread, pyqtSignal
 from PyQt5.QtGui import QFont
 
-import script
+import file_io
 import utils
+import key_generate
+import data_encryption
+import data_decryption
 
 
 class WorkerThread(QThread):
@@ -19,14 +21,7 @@ class WorkerThread(QThread):
     log_signal = pyqtSignal(str)
     finished_signal = pyqtSignal(bool, str)
 
-    def __init__(self, task_func: Callable, config: Dict[str, str]):
-        """
-        Initialize the worker thread.
-
-        Args:
-            task_func (Callable): The orchestration function to run.
-            config (Dict[str, str]): Configuration dictionary.
-        """
+    def __init__(self, task_func: Callable, config: Dict):
         super().__init__()
         self.task_func = task_func
         self.config = config
@@ -46,13 +41,12 @@ class HybridCryptoApp(QMainWindow):
     """Main application window."""
 
     def __init__(self):
-        """Initialize the main window, UI, and default configuration."""
         super().__init__()
         self.setWindowTitle("Hybrid Encryption System (RSA + SM4)")
         self.resize(900, 700)
         self.setMinimumSize(750, 550)
 
-        self.config: Dict[str, str] = {}
+        self.config: Dict = {}
         self.path_inputs: Dict[str, QLineEdit] = {}
         self.worker: WorkerThread | None = None
 
@@ -131,9 +125,9 @@ class HybridCryptoApp(QMainWindow):
         for btn in (self.btn_gen, self.btn_enc, self.btn_dec):
             btn.setObjectName("actionBtn")
             
-        self.btn_gen.clicked.connect(lambda: self._run_task(script.run_generation))
-        self.btn_enc.clicked.connect(lambda: self._run_task(script.run_encryption))
-        self.btn_dec.clicked.connect(lambda: self._run_task(script.run_decryption))
+        self.btn_gen.clicked.connect(lambda: self._run_task(key_generate.run_generation))
+        self.btn_enc.clicked.connect(lambda: self._run_task(data_encryption.run_encryption))
+        self.btn_dec.clicked.connect(lambda: self._run_task(data_decryption.run_decryption))
 
         action_layout.addWidget(self.btn_gen)
         action_layout.addWidget(self.btn_enc)
@@ -149,12 +143,7 @@ class HybridCryptoApp(QMainWindow):
         main_layout.addWidget(console_group)
 
     def _browse_file(self, key: str) -> None:
-        """
-        Open file dialog and update path variable.
-
-        Args:
-            key (str): The configuration key representing the file type.
-        """
+        """Open file dialog and update path variable."""
         current_path = self.path_inputs[key].text()
         start_dir = os.path.dirname(current_path) if current_path else os.path.expanduser("~")
 
@@ -179,20 +168,13 @@ class HybridCryptoApp(QMainWindow):
             self._load_config(path)
 
     def _load_config(self, path: str) -> None:
-        """
-        Read JSON and update UI.
-
-        Args:
-            path (str): Path to the JSON file.
-        """
+        """Read JSON and update UI."""
         try:
-            with open(path, "r", encoding="utf-8") as f:
-                self.config = json.load(f)
-            
+            self.config = file_io.load_json_config(path)
+            paths = self.config.get("paths", {})
             for key, line_edit in self.path_inputs.items():
-                if key in self.config:
-                    line_edit.setText(self.config[key])
-            
+                if key in paths:
+                    line_edit.setText(paths[key])
             self._append_log(f"[INFO] Configuration loaded from {path}")
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to load config:\n{e}")
@@ -204,27 +186,21 @@ class HybridCryptoApp(QMainWindow):
             self._save_config(path)
 
     def _save_config(self, path: str) -> None:
-        """
-        Read UI and save to JSON.
-
-        Args:
-            path (str): Destination path for the JSON file.
-        """
+        """Read UI and save to JSON."""
         try:
-            self.config = {key: line_edit.text() for key, line_edit in self.path_inputs.items()}
-            with open(path, "w", encoding="utf-8") as f:
-                json.dump(self.config, f, indent=4)
+            if "paths" not in self.config:
+                self.config["paths"] = {}
+                
+            for key, line_edit in self.path_inputs.items():
+                self.config["paths"][key] = line_edit.text()
+                
+            file_io.save_json_config(self.config, path)
             self._append_log(f"[INFO] Configuration saved to {path}")
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to save config:\n{e}")
 
     def _append_log(self, message: str) -> None:
-        """
-        Thread-safe UI update for logging with color coding.
-
-        Args:
-            message (str): The log message to display.
-        """
+        """Thread-safe UI update for logging with color coding."""
         prefix = message.split("]")[0] + "]" if "]" in message else ""
         
         match prefix:
@@ -241,12 +217,7 @@ class HybridCryptoApp(QMainWindow):
         self.console.verticalScrollBar().setValue(self.console.verticalScrollBar().maximum())
 
     def _set_buttons_enabled(self, enabled: bool) -> None:
-        """
-        Enable or disable all action buttons.
-
-        Args:
-            enabled (bool): True to enable, False to disable.
-        """
+        """Enable or disable all action buttons."""
         self.btn_gen.setEnabled(enabled)
         self.btn_enc.setEnabled(enabled)
         self.btn_dec.setEnabled(enabled)
@@ -254,15 +225,14 @@ class HybridCryptoApp(QMainWindow):
         self.btn_save.setEnabled(enabled)
 
     def _run_task(self, task_func: Callable) -> None:
-        """
-        Run cryptographic task in a background thread.
-
-        Args:
-            task_func (Callable): The orchestration function to execute.
-        """
-        self.config = {key: line_edit.text() for key, line_edit in self.path_inputs.items()}
+        """Run cryptographic task in a background thread."""
+        if "paths" not in self.config:
+            self.config["paths"] = {}
+            
+        for key, line_edit in self.path_inputs.items():
+            self.config["paths"][key] = line_edit.text()
+            
         self._append_log("-" * 60)
-        
         self._set_buttons_enabled(False)
         
         self.worker = WorkerThread(task_func, self.config)
@@ -271,13 +241,7 @@ class HybridCryptoApp(QMainWindow):
         self.worker.start()
 
     def _on_task_finished(self, success: bool, message: str) -> None:
-        """
-        Handle task completion.
-
-        Args:
-            success (bool): True if the task succeeded, False otherwise.
-            message (str): Completion or error message.
-        """
+        """Handle task completion."""
         self._set_buttons_enabled(True)
         if success:
             self._append_log(f"[SUCCESS] {message}")

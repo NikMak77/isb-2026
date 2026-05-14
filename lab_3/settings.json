@@ -1,8 +1,16 @@
 {
-  "initial_file": "C:/path/to/document.txt",
-  "encrypted_file": "C:/path/to/document.enc",
-  "decrypted_file": "C:/path/to/decrypted_document.txt",
-  "symmetric_key": "keys/enc_sym.key",
-  "public_key": "keys/public.pem",
-  "secret_key": "keys/private.pem"
+  "constants": {
+    "sm4_key_size_bytes": 16,
+    "sm4_block_size_bits": 128,
+    "rsa_key_size_bits": 2048,
+    "rsa_public_exponent": 65537
+  },
+  "paths": {
+    "initial_file": "data/secret.txt",
+    "encrypted_file": "data/secret.enc",
+    "decrypted_file": "data/decrypted.txt",
+    "symmetric_key": "keys/enc_sym.key",
+    "public_key": "keys/public.pem",
+    "secret_key": "keys/private.pem"
+  }
 }
