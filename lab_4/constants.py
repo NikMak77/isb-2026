@@ -1,0 +1,11 @@
+from typing import Final
+
+DEFAULT_COLLISION_BITS: Final[int] = 16
+DEFAULT_MAX_ATTEMPTS: Final[int] = 10_000_000
+
+GUI_DEFAULT_BITS: Final[int] = 16
+GUI_PROGRESS_UPDATE_INTERVAL: Final[int] = 10_000
+COLLISION_LIMIT_GUI: Final[int] = 3_000_000
+
+COLLISION_MIN_BITS: Final[int] = 1
+COLLISION_MAX_BITS: Final[int] = 32
