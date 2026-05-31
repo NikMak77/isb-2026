@@ -40,6 +40,24 @@ class TestHMAC(unittest.TestCase):
         with self.assertRaises(TypeError):
             compute_hmac(123, "key")
 
+    def test_compute_hmac_deterministic(self):
+    h1 = compute_hmac("msg", "key")
+    h2 = compute_hmac("msg", "key")
+    self.assertEqual(h1, h2)
+
+    def test_different_messages_different_hmac(self):
+        h1 = compute_hmac("msg1", "key")
+        h2 = compute_hmac("msg2", "key")
+        self.assertNotEqual(h1, h2)
+
+    def test_verify_raises_on_invalid_hmac_format(self):
+        with self.assertRaises(ValueError):
+            verify_hmac("msg", "key", "not_a_valid_hmac")
+
+    def test_compute_hmac_raises_on_empty_message(self):
+        with self.assertRaises(ValueError):
+            compute_hmac("", "key")
+
 
 if __name__ == '__main__':
     unittest.main()
