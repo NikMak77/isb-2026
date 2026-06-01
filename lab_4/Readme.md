@@ -1,4 +1,4 @@
-# Лабораторная работа №4 — HMAC и поиск коллизий хешей
+# Лабораторная работа №4 — HMAC
 
 ## Описание проекта
 
@@ -19,6 +19,7 @@
 ├── hmac_utils.py       # Утилиты: compute_hmac, verify_hmac, tamper_message
 ├── constants.py        # Все числовые константы
 ├── requirements.txt    # Зависимости
+├── test.py             # Юнит-тесты
 ```
 
 ---

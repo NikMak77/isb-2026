@@ -2,6 +2,12 @@ from typing import Final
 
 HMAC_DIGEST_HEX_LENGTH: Final[int] = 64
 
+TEST1: Final[str] = "Hello, world!"
+TEST2: Final[str] = "Rello, world!"
+TEST_KEY: Final[str] = "mysecretkey"
+TEST_HMAC: Final[str] = "9348e20d01015b7c5881cfdd87473e441429e6d716ba0e2b11951e5f7e40c31d"
+TEST2_HMAC: Final[str] = "9348e20d01015b7c5881cfdd87473e441429e6d716ba0e2b11951e5f7e40c31a"
+
 GUI_WINDOW_TITLE: Final[str] = "Lab 4 – HMAC"
 GUI_MESSAGE_LABEL: Final[str] = "Message:"
 GUI_KEY_LABEL: Final[str] = "Secret key:"
