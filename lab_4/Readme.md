@@ -5,10 +5,7 @@
 **Вариант 4** — реализация HMAC-SHA256 для аутентификации сообщений: генерация кода, верификация, обнаружение подделки.
 
 Приложение поддерживает:
-- графический интерфейс (PyQt5) с двумя вкладками;
-- командную строку через `argparse`;
-- визуализацию прогресса через `tqdm`;
-- конфигурацию через `settings.json`;
+- графический интерфейс (PyQt5);
 - корректную обработку всех исключений.
 
 ---
@@ -20,14 +17,8 @@
 ├── main.py             # Точка входа, парсинг аргументов CLI
 ├── app.py              # GUI: главное окно, вкладки HMAC и Collisions
 ├── hmac_utils.py       # Утилиты: compute_hmac, verify_hmac, tamper_message
-├── collision.py        # Поиск коллизий + усечённый хеш (CLI + tqdm)
 ├── constants.py        # Все числовые константы
-├── settings_loader.py  # Загрузка настроек из settings.json
-├── settings.json       # Конфигурационный файл
 ├── requirements.txt    # Зависимости
-├── tests/              # Юнит-тесты
-|   ├ test_collision.py # Тесты на коллизию
-|   ├ test_hmac.py      # Тесты HMAC
 ```
 
 ---
@@ -43,7 +34,6 @@ pip install -r requirements.txt
 `requirements.txt`:
 ```
 PyQt5>=5.15
-tqdm>=4.60
 ```
 
 ### 2. Запуск в режиме GUI (по умолчанию)
@@ -67,36 +57,6 @@ python main.py --mode hmac --message "Hello, world!" --key "mysecretkey"
 python main.py --mode verify --message "Hello, world!" --key "mysecretkey" --hmac "3b2c1f..."
 # Вывод: Result: Matches  /  Result: Does not match
 ```
-
-#### Найти коллизию:
-```bash
-python main.py --mode collision --bits 16 --attempts 1000000
-# Вывод: прогресс-бар tqdm + результат при нахождении
-```
-
-### 4. Настройки (settings.json)
-
-```json
-{
-  "collision": {
-    "bits": 16,
-    "max_attempts": 10000000,
-    "limit_gui": 3000000
-  },
-  "gui": {
-    "default_bits": 16,
-    "progress_update_interval": 10000
-  }
-}
-```
-
-| Параметр | Описание |
-|---|---|
-| `collision.bits` | Количество бит усечения по умолчанию (CLI) |
-| `collision.max_attempts` | Лимит попыток в CLI-режиме |
-| `collision.limit_gui` | Лимит попыток в GUI (меньше, чтобы не вешать интерфейс) |
-| `gui.default_bits` | Начальное значение спиннера в GUI |
-| `gui.progress_update_interval` | Частота обновления прогресс-бара (каждые N итераций) |
 
 ---
 
@@ -122,16 +82,9 @@ python main.py --mode collision --bits 16 --attempts 1000000
 
 ### Вкладка Collisions
 
-1. Выберите число бит усечения (от 1 до 32) через спиннер. Рекомендуется начать с **8–16 бит**.
-2. Нажмите **Find collision**.
-3. Прогресс-бар покажет процент выполнения.
-4. После завершения отобразятся: два сообщения и их общий усечённый хеш.
-
-> При 8 битах коллизия находится почти мгновенно (≈256 попыток). При 24 битах — уже миллионы попыток. При 32 битах лимит GUI (3 000 000) может не дать найти коллизию — увеличьте `limit_gui` в `settings.json`.
-
 ---
 
-## Выввод
+## Вывод
 
 В ходе выполнения лабораторной работы был изучен и реализован механизм
 аутентификации сообщений на основе HMAC-SHA256.
